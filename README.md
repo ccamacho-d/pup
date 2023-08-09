@@ -9,15 +9,15 @@ fast and flexible way of exploring HTML from the terminal.
 
 ## Install
 
-Direct downloads are available through the [releases page](https://github.com/EricChiang/pup/releases/latest).
+Direct downloads are available through the [releases page](https://github.com/ccamacho-d/pup/releases/latest).
 
 If you have Go installed on your computer just run `go get`.
 
-    go get github.com/ericchiang/pup
+    go get github.com/ccamacho-d/pup
 
 If you're on OS X, use [Homebrew](http://brew.sh/) to install (no Go required).
 
-    brew install https://raw.githubusercontent.com/EricChiang/pup/master/pup.rb
+    brew install https://raw.githubusercontent.com/ccamacho-d/pup/master/pup.rb
 
 ## Quick start
 
@@ -115,8 +115,7 @@ $ cat robots.html | pup 'th[scope="row"]'
 
 #### Pseudo Classes
 
-CSS selectors have a group of specifiers called ["pseudo classes"](
-https://developer.mozilla.org/en-US/docs/Web/CSS/Pseudo-classes)  which are pretty
+CSS selectors have a group of specifiers called ["pseudo classes"](https://developer.mozilla.org/en-US/docs/Web/CSS/Pseudo-classes) which are pretty
 cool. pup implements a majority of the relevant ones them.
 
 Here are some examples.
@@ -148,7 +147,6 @@ $ cat robots.html | pup ':parent-of([action="edit"])'
 
 For a complete list, view the [implemented selectors](#implemented-selectors)
 section.
-
 
 #### `+`, `>`, and `,`
 
@@ -188,8 +186,7 @@ $ cat robots.html | pup 'h1#firstHeading span'
 
 ## Implemented Selectors
 
-For further examples of these selectors head over to [MDN](
-https://developer.mozilla.org/en-US/docs/Web/CSS/Reference).
+For further examples of these selectors head over to [MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference).
 
 ```bash
 pup '.class'
