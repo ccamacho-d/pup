@@ -1,0 +1,212 @@
+name: Build and Publish Release
+
+on:
+  push:
+    tags:
+      - v**
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      - name: Setup Go Environment
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21
+          check-latest: true
+      - name: Run Tests
+        run: go test ./...
+
+  release:
+    if: contains(github.ref, 'tags/v')
+    permissions: write-all
+    name: Create GitHub Release
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      - name: Set Release Tag
+        id: get_tag
+        run: echo "::set-output name=tag::$(echo $GITHUB_REF | sed -n 's/refs\/tags\///p')"
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_tag.outputs.tag }}
+          release_name: Release ${{ steps.get_tag.outputs.tag }}
+          body: |
+            Describe your release here.
+          draft: true
+          prerelease: false
+      - name: Create Release URL File
+        run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
+      - name: Save Release URL File for Publishing
+        uses: actions/upload-artifact@v1
+        with:
+          name: release_url
+          path: release_url.txt
+
+  publish-linux:
+    if: contains(github.ref, 'tags/v')
+    needs: [test, release]
+    permissions: write-all
+    name: Publish Binaries (Ubuntu)
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        goos: [linux]
+        goarch: ["386", "amd64", "arm", "arm64"]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      - name: Load Release URL File from Release Job
+        uses: actions/download-artifact@v1
+        with:
+          name: release_url
+      - name: Get Tag from Git Reference
+        id: get_tag
+        run: echo "::set-output name=tag::$(echo $GITHUB_REF | sed -n 's/refs\/tags\///p')"
+      - name: Get Release File Name & Upload URL
+        id: get_release_info
+        env:
+          TAG_REF_NAME: ${{ github.ref }}
+          REPOSITORY_NAME: ${{ github.repository }}
+        run: |
+          echo ::set-output name=file_name::${REPOSITORY_NAME##*/}-${TAG_REF_NAME##*/v} # RepositoryName-v1.0.0
+          value=$(cat release_url/release_url.txt)
+          echo ::set-output name=upload_url::$value
+
+      - name: Setup Go Environment
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21
+          check-latest: true
+      - name: Build Binary
+        run: GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o ${{ steps.get_release_info.outputs.file_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+          asset_path: ${{ steps.get_release_info.outputs.file_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_name: ${{ steps.get_release_info.outputs.file_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_content_type: application/octet-stream
+
+  publish-darwin:
+    if: contains(github.ref, 'tags/v')
+    needs: [test, release]
+    permissions: write-all
+    name: Publish Binaries (Mac OS)
+    runs-on: macos-latest
+
+    strategy:
+      matrix:
+        goos: [darwin]
+        goarch: ["amd64", "arm64"]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      - name: Load Release URL File from Release Job
+        uses: actions/download-artifact@v1
+        with:
+          name: release_url
+      - name: Get Tag from Git Reference
+        id: get_tag
+        run: echo "::set-output name=tag::$(echo $GITHUB_REF | sed -n 's/refs\/tags\///p')"
+      - name: Get Release File Name & Upload URL
+        id: get_release_info
+        env:
+          TAG_REF_NAME: ${{ github.ref }}
+          REPOSITORY_NAME: ${{ github.repository }}
+        run: |
+          echo ::set-output name=file_name::${REPOSITORY_NAME##*/}-${TAG_REF_NAME##*/v} # RepositoryName-v1.0.0
+          value=$(cat release_url/release_url.txt)
+          echo ::set-output name=upload_url::$value
+
+      - name: Setup Go Environment
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21
+          check-latest: true
+      - name: Build Binary
+        run: GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o ${{ steps.get_release_info.outputs.file_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+          asset_path: ${{ steps.get_release_info.outputs.file_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_name: ${{ steps.get_release_info.outputs.file_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_content_type: application/octet-stream
+
+  publish-windows:
+    if: contains(github.ref, 'tags/v')
+    needs: [test, release]
+    permissions: write-all
+    name: Publish Binaries (Windows)
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        goos: [windows]
+        goarch: ["386", "amd64"]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      - name: Load Release URL File from Release Job
+        uses: actions/download-artifact@v1
+        with:
+          name: release_url
+      - name: Get Tag from Git Reference
+        id: get_tag
+        run: echo "::set-output name=tag::$(echo $GITHUB_REF | sed -n 's/refs\/tags\///p')"
+
+      - name: Get Release File Name & Upload URL
+        id: get_release_info
+        env:
+          TAG_REF_NAME: ${{ github.ref }}
+          REPOSITORY_NAME: ${{ github.repository }}
+        run: |
+          echo ::set-output name=file_name::%REPOSITORY_NAME:~15,-4%-%TAG_REF_NAME:~10,-2%
+          set /p value=<release_url\release_url.txt
+          echo ::set-output name=upload_url::%value%
+
+      - name: Setup Go Environment
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21
+          check-latest: true
+      - name: Build Binary
+        run: |
+          $env:GOOS="${{ matrix.goos }}"
+          $env:GOARCH="${{ matrix.goarch }}"
+          $file_name = $env:file_name + "-${{ matrix.goos }}-${{ matrix.goarch }}"
+          go build -o $file_name
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+          asset_path: ${{ steps.get_release_info.outputs.file_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_name: ${{ steps.get_release_info.outputs.file_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_content_type: application/octet-stream
