@@ -2,7 +2,8 @@ on:
   push:
     tags:
       - v1.**
-  workflow_dispatch:
+
+workflow_dispatch:
 
 name: Build Release
 jobs:
