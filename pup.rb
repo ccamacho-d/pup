@@ -2,7 +2,7 @@
 require 'formula'
 class Pup < Formula
   homepage 'https://github.com/ccamacho-d/pup'
-  version '0.4.0'
+  version '0.4.1'
 
   if Hardware::CPU.is_64_bit?
     url 'https://github.com/ccamacho-d/pup/releases/download/v0.4.1/pup_v0.4.1_darwin_amd64.zip'
