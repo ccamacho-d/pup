@@ -3,7 +3,7 @@ name: Build Release
 on:
   push:
     tags:
-      - "v*.*.*" # Trigger the workflow on new tags starting with 'v'
+      - "v**"
   workflow_dispatch:
 
 jobs:
